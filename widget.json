@@ -1,0 +1,6 @@
+{
+  "name": "conky-for-mac",
+  "description": "Conky is a common linux desktop widget. However, OS X does not support conky. Conky-for-mac provides similar functionality to conky. Using coffeeScript and Übersicht, the widget is easily modified to meet your needs",
+  "author": "Jeff Cartwright",
+  "email": "cartwright25@gmail.com"
+}
