@@ -1,6 +1,6 @@
-command: "echo $(sw_vers -productVersion) $(sysctl -n hw.cpufrequency) $(sysctl -n hw.memsize)  $(sysctl -n hw.ncpu) $(ps aux  | awk 'BEGIN { sum = 0 }  { sum += $3 }; END { print sum }') $(ipconfig getifaddr en1) $(dig +short myip.opendns.com @resolver1.opendns.com) $(sar -n DEV 1 1 2> /dev/null | awk '/en1/{x++}x==2 {print $4,$6;exit}') $(top -l 1 -s 0 | grep PhysMem) $(sysctl -n vm.swapusage) $(df -gH /)" 
+command: "echo $(curl -s http://support-sp.apple.com/sp/product?cc=`system_profiler SPHardwareDataType | awk '/Serial/ {print $4}' | cut -c 9-` | awk -F '<configCode>|<.configCode>' '{print $2}') $(sw_vers -productVersion) $(sysctl -n hw.cpufrequency) $(sysctl -n hw.memsize)  $(sysctl -n hw.ncpu) $(ps aux  | awk 'BEGIN { sum = 0 }  { sum += $3 }; END { print sum }') $(ipconfig getifaddr en1) $(dig +short myip.opendns.com @resolver1.opendns.com) $(sar -n DEV 1 1 2> /dev/null | awk '/en1/{x++}x==2 {print $4,$6;exit}') $(top -l 1 -s 0 | grep PhysMem) $(sysctl -n vm.swapusage) $(df -gH /)" 
 # conky-like widget for Mac OS X, works on 10.11.6
-# don't publish your public IP
+# don't publish your public IP 
 # please enhance
 
 refreshFrequency: 2000
@@ -50,6 +50,11 @@ style: """
         padding-left 10px
 
     // data to display
+    .model
+        font-size: 10px
+        font-weight: bold
+        margin: 0
+
     .version
         font-size: 10px
         font-weight: bold
@@ -120,8 +125,7 @@ style: """
 render: -> """
     <div class="container">
         <div class="widget-title">System</div>
-        <!-- I use following computer, change to yours -->
-        <div class="widget-data">MacBook Pro Mid-2009</div>
+        <div class="widget-data"><span class='model'></span></div>
         <div class="widget-data">OS X <span class='version'></span></div>
         <div class="widget-title">CPU</div>
         <!-- Future: Rather than hardcoding parse: sysctl -n machdep.cpu.brand_string -->
@@ -146,38 +150,40 @@ render: -> """
 """
 
 update: (output, domEl) ->
-  values = output.split(" ")
+    values = output.split(" ")
 
-  version = values[0]
-  speed = values[1]/1000000000
-  memory = values[2]/1024/1024/1024
-  cpu_cores = values[3]
-  cpu_usage = values[4]/cpu_cores
-  local_ip = values[5]
-  public_ip = values[6]
-  # future: upload and download should be in MB/GB
-  download = values[7]
-  upload = values[8]
-  # future: memory and swap used should be in GB
-  memory_used = values[10]
-  # skip several values
-  # grab command string and execute in terminal window to determine array index
-  swap_used = values[18]
-  disk_avail = values[37]
-  disk_used = values[38]
-  div     = $(domEl)
+    model = values[0] + values[1] + values[2] + values[3] + values[4]
+    version = values[5]
+    speed = values[6]/1000000000
+    memory = values[7]/1024/1024/1024
+    cpu_cores = values[8]
+    cpu_usage = values[9]/cpu_cores
+    local_ip = values[10]
+    public_ip = values[11]
+    # future: upload and download should be in MB/GB
+    download = values[12]
+    upload = values[13]
+    # future: memory and swap used should be in GB
+    memory_used = values[15]
+    # skip several values
+    # grab command string and execute in terminal window to determine array index
+    swap_used = values[23]
+    disk_avail = values[42]
+    disk_used = values[43]
+    div     = $(domEl)
 
-  # must add a line like the ones below for each new value  
-  div.find('.version').html(version)
-  div.find('.speed').html(speed)
-  div.find('.memory').html(memory)
-  div.find('.cpu_usage').html(cpu_usage)
-  div.find('.cpu_cores').html(cpu_cores)
-  div.find('.memory_used').html(memory_used)
-  div.find('.swap_used').html(swap_used)
-  div.find('.disk_avail').html(disk_avail)
-  div.find('.disk_used').html(disk_used)
-  div.find('.local_ip').html(local_ip)
-  div.find('.public_ip').html(public_ip)
-  div.find('.download').html(download)
-  div.find('.upload').html(upload)
+# must add a line like the ones below for each new value  
+    div.find('.model').html(model)
+    div.find('.version').html(version)
+    div.find('.speed').html(speed)
+    div.find('.memory').html(memory)
+    div.find('.cpu_usage').html(cpu_usage)
+    div.find('.cpu_cores').html(cpu_cores)
+    div.find('.memory_used').html(memory_used)
+    div.find('.swap_used').html(swap_used)
+    div.find('.disk_avail').html(disk_avail)
+    div.find('.disk_used').html(disk_used)
+    div.find('.local_ip').html(local_ip)
+    div.find('.public_ip').html(public_ip)
+    div.find('.download').html(download)
+    div.find('.upload').html(upload)
