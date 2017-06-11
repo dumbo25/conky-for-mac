@@ -1,11 +1,16 @@
-command: "echo $(curl -s http://support-sp.apple.com/sp/product?cc=`system_profiler SPHardwareDataType | awk '/Serial/ {print $4}' | cut -c 9-` | awk -F '<configCode>|<.configCode>' '{print $2}') $(sw_vers -productVersion) $(sysctl -n hw.cpufrequency) $(sysctl -n hw.memsize)  $(sysctl -n hw.ncpu) $(ps aux  | awk 'BEGIN { sum = 0 }  { sum += $3 }; END { print sum }') $(ipconfig getifaddr en1) $(dig +short myip.opendns.com @resolver1.opendns.com) $(sar -n DEV 1 1 2> /dev/null | awk '/en1/{x++}x==2 {print $4,$6;exit}') $(top -l 1 -s 0 | grep PhysMem) $(sysctl -n vm.swapusage) $(df -gH /)" 
-# conky-like widget for Mac OS X, works on 10.11.6
-# don't publish your public IP 
-# please enhance
+command: "echo $(curl -s http://support-sp.apple.com/sp/product?cc=`system_profiler SPHardwareDataType | awk '/Serial/ {print $4}' | cut -c 9-` | awk -F '<configCode>|<.configCode>' '{print $2}') $(sw_vers -productVersion) $(system_profiler SPHardwareDataType | grep 'Processor Name') $(sysctl -n hw.cpufrequency) $(sysctl -n hw.memsize)  $(sysctl -n hw.ncpu) $(ps aux  | awk 'BEGIN { sum = 0 }  { sum += $3 }; END { print sum }') $(ipconfig getifaddr en1) $(dig +short myip.opendns.com @resolver1.opendns.com) $(sar -n DEV 1 1 2> /dev/null | awk '/en1/{x++}x==2 {print $4,$6;exit}') $(top -l 1 -s 0 | grep PhysMem) $(sysctl -n vm.swapusage) $(df -gH /)" 
+# conky-like widget for Mac OS X, works on 10.11.6 and Mid 2009
+# Notes:
+#   This works on my MacBook. I haven't tested on any others
+#      On your MacBook, the command may return a different number of values
+#      values is an array of the values output by the command
+#      Adjust value's index to match your MacBook
+#   don't publish your public IP 
+#   Conky uses three comment delimiters: //, <!-- -->, and #
+#
+# please enhance / simplify
 
 refreshFrequency: 2000
-
-# Note: three comment delimiters are used: //, <!-- -->, and #
 
 style: """
     // Align contents of container
@@ -56,6 +61,11 @@ style: """
         margin: 0
 
     .version
+        font-size: 10px
+        font-weight: bold
+        margin: 0
+
+    .processor
         font-size: 10px
         font-weight: bold
         margin: 0
@@ -128,9 +138,7 @@ render: -> """
         <div class="widget-data"><span class='model'></span></div>
         <div class="widget-data">OS X <span class='version'></span></div>
         <div class="widget-title">CPU</div>
-        <!-- Future: Rather than hardcoding parse: sysctl -n machdep.cpu.brand_string -->
-        <!-- use: system_profiler SPHardwareDataType | grep "Processor Name" -->
-        <div class="widget-data">Processor: Core2 Duo P7550</span></div>
+        <div class="widget-data">Processor: <span class='processor'></span></div>
         <div class="widget-data">Speed: <span class='speed'></span> GHz</div>
         <div class="widget-data">Cores: <span class='cpu_cores'></span></div>
         <div class="widget-data">Usage: <span class='cpu_usage'></span> %</div>
@@ -148,42 +156,43 @@ render: -> """
         <div class="widget-data">Upload: <span class='download'></span></div>   
     </div>
 """
-
+	
 update: (output, domEl) ->
-    values = output.split(" ")
+	values = output.split(" ")
+	model = values[0] + " " + values[1] + values[2] + " " + values[3] + " " +values[4]
+	version = values[5]
+	processor = values[8] + " " + values[9] + " " + values[10] + " " + values[11]
+	speed = values[12]/1000000000
+	memory = values[13]/1024/1024/1024
+	cpu_cores = values[14]
+	cpu_usage = values[15]/cpu_cores
+	local_ip = values[16]
+	public_ip = values[17]
+	# future: upload and download should be in MB/GB
+	download = values[18]
+	upload = values[19]
+	# future: memory and swap used should be in GB
+	memory_used = values[21]
+	# skip several values
+	# grab command string and execute in terminal window to determine array index
+	swap_used = values[29]
+	disk_avail = values[48]
+	disk_used = values[49]
+	div = $(domEl)
 
-    model = values[0] + values[1] + values[2] + values[3] + values[4]
-    version = values[5]
-    speed = values[6]/1000000000
-    memory = values[7]/1024/1024/1024
-    cpu_cores = values[8]
-    cpu_usage = values[9]/cpu_cores
-    local_ip = values[10]
-    public_ip = values[11]
-    # future: upload and download should be in MB/GB
-    download = values[12]
-    upload = values[13]
-    # future: memory and swap used should be in GB
-    memory_used = values[15]
-    # skip several values
-    # grab command string and execute in terminal window to determine array index
-    swap_used = values[23]
-    disk_avail = values[42]
-    disk_used = values[43]
-    div     = $(domEl)
-
-# must add a line like the ones below for each new value  
-    div.find('.model').html(model)
-    div.find('.version').html(version)
-    div.find('.speed').html(speed)
-    div.find('.memory').html(memory)
-    div.find('.cpu_usage').html(cpu_usage)
-    div.find('.cpu_cores').html(cpu_cores)
-    div.find('.memory_used').html(memory_used)
-    div.find('.swap_used').html(swap_used)
-    div.find('.disk_avail').html(disk_avail)
-    div.find('.disk_used').html(disk_used)
-    div.find('.local_ip').html(local_ip)
-    div.find('.public_ip').html(public_ip)
-    div.find('.download').html(download)
-    div.find('.upload').html(upload)
+	# must add a line like the ones below for each new value	
+	div.find('.model').html(model)
+	div.find('.version').html(version)
+	div.find('.processor').html(processor)
+	div.find('.speed').html(speed)
+	div.find('.memory').html(memory)
+	div.find('.cpu_usage').html(cpu_usage)
+	div.find('.cpu_cores').html(cpu_cores)
+	div.find('.memory_used').html(memory_used)
+	div.find('.swap_used').html(swap_used)
+	div.find('.disk_avail').html(disk_avail)
+	div.find('.disk_used').html(disk_used)
+	div.find('.local_ip').html(local_ip)
+	div.find('.public_ip').html(public_ip)
+	div.find('.download').html(download)
+	div.find('.upload').html(upload)
