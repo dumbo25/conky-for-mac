@@ -1,5 +1,5 @@
-command: "echo $(curl -s http://support-sp.apple.com/sp/product?cc=`system_profiler SPHardwareDataType | awk '/Serial/ {print $4}' | cut -c 9-` | awk -F '<configCode>|<.configCode>' '{print $2}') $(sw_vers -productVersion) $(system_profiler SPHardwareDataType | grep 'Processor Name') $(sysctl -n hw.cpufrequency) $(sysctl -n hw.memsize)  $(sysctl -n hw.ncpu) $(ps aux  | awk 'BEGIN { sum = 0 }  { sum += $3 }; END { print sum }') $(ipconfig getifaddr en1) $(dig +short myip.opendns.com @resolver1.opendns.com) $(sar -n DEV 1 1 2> /dev/null | awk '/en1/{x++}x==2 {print $4,$6;exit}') $(top -l 1 -s 0 | grep PhysMem) $(sysctl -n vm.swapusage) $(df -gH /)" 
-# conky-like widget for Mac OS X, works on 10.11.6 and Mid 2009
+command: "echo $(curl -s http://support-sp.apple.com/sp/product?cc=`system_profiler SPHardwareDataType | awk '/Serial/ {print $4}' | cut -c 9-` | awk -F '<configCode>|<.configCode>' '{print $2}') $(sw_vers -productVersion) $(system_profiler SPHardwareDataType | grep 'Processor Name') $(sysctl -n hw.cpufrequency) $(sysctl -n hw.memsize)  $(sysctl -n hw.ncpu) $(ps aux  | awk 'BEGIN { sum = 0 }  { sum += $3 }; END { print sum }') $(ipconfig getifaddr en1) $(dig +short myip.opendns.com @resolver1.opendns.com) $(/usr/local/bin/ifstat -Tzb 1 1 | grep ' [0-9]' | awk '{print $11\"Kbps \" $12\"Kbps\"}') $(top -l 1 -s 0 | grep PhysMem) $(sysctl -n vm.swapusage) $(df -gH /)" 
+# conky-like widget for Mac OS X, worked on 10.11.6 and Mid 2009. Modified to work on 10.12 Mid-2012
 # Notes:
 #   This works on my MacBook. I haven't tested on any others
 #      On your MacBook, the command may return a different number of values
@@ -7,6 +7,23 @@ command: "echo $(curl -s http://support-sp.apple.com/sp/product?cc=`system_profi
 #      Adjust value's index to match your MacBook
 #   don't publish your public IP 
 #   Conky uses three comment delimiters: //, <!-- -->, and #
+#
+# Sierra changes:
+#   Got new to me mac, upgraded to sierra. sar doesn’t work on sierra. install ifstat. 
+#   Replace this command: sar -n DEV 1 1 2> /dev/null | awk '/en1/{x++}x==2 {print $4,$6;exit}' 
+#   with ifstat command
+#	https://linux.die.net/man/1/ifstat - man page
+#	http://macappstore.org/ifstat/ - installation instructions
+#	Sierra doesn't come with ifstat
+#   Install iftstat. Open a terminal window and run the commands
+#      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
+#      brew install ifstat
+#      # 777 is probably the wrong setting, please do the right thing
+#      sudo chmod 777 /usr/local/opt
+#      brew link ifstat
+# print input and output in Kbps, and grab only the in and out totals
+#      /usr/local/bin/ifstat -Tzb 1 1 | grep ' [0-9]' | awk '{print $11\"Kbps \" $12\"Kbps\"
+
 #
 # please enhance / simplify
 
@@ -161,23 +178,23 @@ update: (output, domEl) ->
 	values = output.split(" ")
 	model = values[0] + " " + values[1] + values[2] + " " + values[3] + " " +values[4]
 	version = values[5]
-	processor = values[8] + " " + values[9] + " " + values[10] + " " + values[11]
-	speed = values[12]/1000000000
-	memory = values[13]/1024/1024/1024
-	cpu_cores = values[14]
-	cpu_usage = values[15]/cpu_cores
-	local_ip = values[16]
-	public_ip = values[17]
+	processor = values[8] + " " + values[9] + " " + values[10] 
+	speed = values[11]/1000000000
+	memory = values[12]/1024/1024/1024
+	cpu_cores = values[13]
+	cpu_usage = values[14]/cpu_cores
+	local_ip = values[15]
+	public_ip = values[16]
 	# future: upload and download should be in MB/GB
-	download = values[18]
-	upload = values[19]
+	download = values[17]
+	upload = values[18]
 	# future: memory and swap used should be in GB
-	memory_used = values[21]
+	memory_used = values[20]
 	# skip several values
 	# grab command string and execute in terminal window to determine array index
-	swap_used = values[29]
-	disk_avail = values[48]
-	disk_used = values[49]
+	swap_used = values[28]
+	disk_avail = values[47]
+	disk_used = values[48]
 	div = $(domEl)
 
 	# must add a line like the ones below for each new value	
